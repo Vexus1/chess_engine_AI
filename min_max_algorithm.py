@@ -91,14 +91,27 @@ class ChessAi:
             int: The depth of the decision tree used by the Min-Max algorithm.
         """
         return 3  # Example fixed depth; in practice, this could be set dynamically
+    
+    def player_move(self) -> str:
+        while True:
+            move = input('Enter your move: ')
+            if move not in self.possible_moves:
+                print('Move is not possible!')
+                print()
+                print(self.board)
+                print()
+                print('Possible moves:')
+                print()
+                print(self.possible_moves)
+            else:
+                return move
 
     def play(self) -> None:
         while True:
             print(self.board)
             print()
             if self.board.turn == chess.WHITE:
-                print(f'Possible moves: {self.possible_moves}')
-                move = input('Enter your move: ')
+                move = self.player_move()
                 self.board.push_san(move)
             else:
                 best_move = self.decision_function(self.decision_tree_depth)
