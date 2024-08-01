@@ -1,5 +1,6 @@
 import chess
 from chess import Piece, Board, Move
+from icecream import ic
 
 class ChessAi:
     def __init__(self, board: Board):
@@ -57,12 +58,18 @@ class ChessAi:
                 best_value = board_value
                 best_move = move
         return best_move
+    
+    @property
+    def possible_moves(self) -> tuple[str]:
+        moves = tuple(map(str, list(self.board.legal_moves)))
+        return moves
 
     def play(self) -> None:
         while True:
             print(self.board)
             print()
             if self.board.turn == chess.WHITE:
+                print(f'Possible moves: {self.possible_moves}')
                 move = input('Enter your move: ')
                 self.board.push_san(move)
             else:
