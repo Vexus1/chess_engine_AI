@@ -7,18 +7,13 @@ class ChessAi:
         self.board = board
 
     def pieces_value(self, piece: Piece) -> int:
-        '''sign == 1 -> WHITE, sign == -1 -> BLACK'''
         values_map = {chess.PAWN: 1,
                       chess.KNIGHT: 3,
                       chess.BISHOP: 3,
                       chess.ROOK: 5,
                       chess.QUEEN: 9,
                       chess.KING: 0}
-        if piece.color == chess.WHITE:
-            sign = 1
-        else:
-            sign = -1
-        return sign * values_map[piece.piece_type]
+        return values_map[piece.piece_type]
 
     @property
     def evaluate_board(self) -> int:
@@ -52,7 +47,7 @@ class ChessAi:
         best_value = float('-inf')
         for move in self.board.legal_moves:
             self.board.push(move)
-            board_value = self.min_max(depth - 1, False)
+            board_value = max(best_value, self.min_max(depth - 1, False))
             self.board.pop()
             if board_value > best_value:
                 best_value = board_value
@@ -112,7 +107,8 @@ class ChessAi:
             print()
             if self.board.turn == chess.WHITE:
                 move = self.player_move()
-                self.board.push_san(move)
+                move = chess.Move.from_uci(str(move))
+                self.board.push(move)
             else:
                 best_move = self.decision_function(self.decision_tree_depth)
                 self.board.push(best_move)
