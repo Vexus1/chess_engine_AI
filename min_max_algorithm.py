@@ -1,3 +1,5 @@
+from random import choice
+
 import chess
 from chess import Piece, Board, Move
 from icecream import ic
@@ -13,7 +15,11 @@ class ChessAi:
                       chess.ROOK: 5,
                       chess.QUEEN: 9,
                       chess.KING: 0}
-        return values_map[piece.piece_type]
+        if piece.color == chess.WHITE:
+            sign = -1
+        else:
+            sign = 1
+        return sign * values_map[piece.piece_type]
 
     @property
     def evaluate_board(self) -> int:
@@ -100,6 +106,14 @@ class ChessAi:
                 print(self.possible_moves)
             else:
                 return move
+            
+    @property
+    def random_agent(self):
+        move = choice(self.possible_moves)
+        print()
+        print(f'Random move: {move}')
+        print()
+        return choice(self.possible_moves)
 
     def play(self) -> None:
         while True:
@@ -107,6 +121,7 @@ class ChessAi:
             print()
             if self.board.turn == chess.WHITE:
                 move = self.player_move()
+                # move = self.random_agent
                 move = chess.Move.from_uci(str(move))
                 self.board.push(move)
             else:
