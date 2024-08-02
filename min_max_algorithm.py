@@ -114,21 +114,18 @@ class ChessAi:
         print(f'Random move: {move}')
         print()
         return choice(self.possible_moves)
-
-    def play(self) -> None:
-        while True:
-            print(self.board)
+    
+    def move(self) -> None:
+        print(self.board)
+        print()
+        if self.board.turn == chess.WHITE:
+            move = self.player_move()
+            # move = self.random_agent
+            move = chess.Move.from_uci(str(move))
+            self.board.push(move)
+        else:
+            best_move = self.decision_function(self.decision_tree_depth)
+            self.board.push(best_move)
+            print(f'AI move: {best_move}')
             print()
-            if self.board.turn == chess.WHITE:
-                move = self.player_move()
-                # move = self.random_agent
-                move = chess.Move.from_uci(str(move))
-                self.board.push(move)
-            else:
-                best_move = self.decision_function(self.decision_tree_depth)
-                self.board.push(best_move)
-                print(f'AI move: {best_move}')
-                print()
-            if self.board.is_game_over():
-                print('Game over')
-                break
+        
