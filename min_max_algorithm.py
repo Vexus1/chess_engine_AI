@@ -28,24 +28,30 @@ class ChessAi:
                           for piece in self.board.piece_map().values()])
         return curr_power
 
-    def min_max(self, depth: int, is_maximizing: bool) -> int:
+    def min_max(self, depth: int, alpha: int, beta: int, is_maximizing: bool) -> int:
         if depth == 0 or self.board.is_game_over():
             return self.evaluate_board
         if is_maximizing:
             max_eval = float('-inf')
             for move in self.board.legal_moves:
                 self.board.push(move)
-                eval = self.min_max(depth - 1, False)
+                eval = self.min_max(depth - 1, alpha, beta, False)
                 self.board.pop()
                 max_eval = max(max_eval, eval)
+                alpha = max(alpha, max_eval)
+                if beta <= alpha:
+                    break
             return max_eval
         else:
             min_eval = float('inf')
             for move in self.board.legal_moves:
                 self.board.push(move)
-                eval = self.min_max(depth - 1, True)
+                eval = self.min_max(depth - 1, alpha, beta, True)
                 self.board.pop()
                 min_eval = min(min_eval, eval)
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break
             return min_eval
 
     def decision_function(self, depth: int) -> Move:
@@ -53,7 +59,9 @@ class ChessAi:
         best_value = float('-inf')
         for move in self.board.legal_moves:
             self.board.push(move)
-            board_value = max(best_value, self.min_max(depth - 1, False))
+            alpha = float('-inf')
+            beta = float('inf')
+            board_value = max(best_value, self.min_max(depth - 1, alpha, beta, False))
             self.board.pop()
             if board_value > best_value:
                 best_value = board_value
@@ -91,9 +99,10 @@ class ChessAi:
         Returns:
             int: The depth of the decision tree used by the Min-Max algorithm.
         """
-        return 3  # Example fixed depth; in practice, this could be set dynamically
+        return 4  # Example fixed depth; in practice, this could be set dynamically
     
-    def player_move(self) -> str:
+    @property
+    def player(self) -> str:
         while True:
             move = input('Enter your move: ')
             if move not in self.possible_moves:
@@ -106,9 +115,8 @@ class ChessAi:
                 print(self.possible_moves)
             else:
                 return move
-            
     @property
-    def random_agent(self):
+    def random_agent(self) -> str:
         move = choice(self.possible_moves)
         print()
         print(f'Random move: {move}')
@@ -119,8 +127,8 @@ class ChessAi:
         print(self.board)
         print()
         if self.board.turn == chess.WHITE:
-            move = self.player_move()
-            # move = self.random_agent
+            # move = self.player_move
+            move = self.random_agent
             move = chess.Move.from_uci(str(move))
             self.board.push(move)
         else:
