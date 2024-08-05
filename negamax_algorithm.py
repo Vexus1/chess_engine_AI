@@ -31,6 +31,8 @@ class ChessAi:
         return sum(curr_power)
         
     def negamax(self, depth: int, alpha: int, beta: int, color: int) -> int:
+        '''This algorithm relies on the fact that: min(a,b) = -max(-b,-a)
+           to simplify the implementation of the minimax algorithm'''
         if depth == 0 or self.board.is_game_over():
             return color * self.evaluate_board
         max_eval = float('-inf')
@@ -67,31 +69,8 @@ class ChessAi:
     
     @property
     def decision_tree_depth(self) -> int:
-        """
-        Determines the depth of the decision tree for the Min-Max algorithm.
-
-        The depth parameter in the Min-Max algorithm represents how many levels ahead
-        the algorithm should evaluate possible moves in the game tree. Each level in the
-        tree corresponds to a ply, which is a half-move in chess (one move by either player).
-
-        A greater depth allows the algorithm to consider more future possibilities,
-        leading to potentially stronger and more strategic moves. However, increasing the
-        depth also exponentially increases the number of positions that must be evaluated,
-        which requires more computational resources and time.
-
-        For instance, a depth of 3 means the algorithm will look ahead 3 plies (or 1.5 moves)
-        into the future, evaluating the consequences of the current move, the opponent's
-        response, and the subsequent move by the player. While this provides a moderate level
-        of foresight, deeper searches (e.g., 5 or 7 plies) can significantly improve the quality
-        of decisions at the cost of increased computational effort.
-
-        It is crucial to balance depth with available computational resources to ensure the AI
-        performs optimally without excessive delays, especially in interactive settings.
-
-        Returns:
-            int: The depth of the decision tree used by the Min-Max algorithm.
-        """
-        return 5  # Example fixed depth; in practice, this could be set dynamically
+        '''Determines the depth of the decision tree for the Min-Max algorithm.'''
+        return 4  
     
     @property
     def player(self) -> str:
