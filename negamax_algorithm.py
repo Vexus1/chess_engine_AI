@@ -9,6 +9,7 @@ from ai_timer import time_it, sum_time
 class ChessAi:
     def __init__(self, board: Board):
         self.board = board
+        self.null_move_reduction = 2 
 
     def pieces_value(self, piece: Piece) -> int:
         values_map = {chess.PAWN: 1,
@@ -35,6 +36,7 @@ class ChessAi:
            to simplify the implementation of the minimax algorithm'''
         if depth == 0 or self.board.is_game_over():
             return color * self.evaluate_board
+        self.null_move_pruning(depth, alpha, beta, color)
         max_eval = float('-inf')
         for move in self.board.legal_moves:
             self.board.push(move)
@@ -45,7 +47,20 @@ class ChessAi:
             if alpha >= beta:
                 break
         return max_eval
-
+    
+    def null_move_heuristic(self, depth: int, alpha: int,
+                          beta: int, color: int) -> int:
+        '''Implements null move heuristic to enhance the alpha-beta pruning
+           in the Negamax algorithm. This technique involves making
+           a 'null' move (no actual move) and searching at a reduced depth.'''
+        if depth >= (self.null_move_reduction + 1) and not self.board.is_check():
+            self.board.push(chess.Move.null())
+            null_move_eval = -self.negamax(depth - 1 - self.null_move_reduction,
+                                           -beta, -alpha, -color)
+            self.board.pop()
+            if null_move_eval >= beta:
+                return beta
+            
     @time_it
     def decision_function(self, depth: int) -> Move:
         best_move = None
@@ -70,7 +85,7 @@ class ChessAi:
     @property
     def decision_tree_depth(self) -> int:
         '''Determines the depth of the decision tree for the Min-Max algorithm.'''
-        return 4  
+        return 5
     
     @property
     def player(self) -> str:
@@ -98,8 +113,8 @@ class ChessAi:
         print(self.board)
         print()
         if self.board.turn == chess.WHITE:
-            # move = self.player
-            move = self.random_agent
+            move = self.player
+            # move = self.random_agent
             move = chess.Move.from_uci(str(move))
             self.board.push(move)
         else:
