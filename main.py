@@ -1,6 +1,6 @@
 import chess
 
-from min_max_algorithm import ChessAi
+from negamax_algorithm import ChessAi
 
 board = chess.Board()
 chess_ai = ChessAi(board)
