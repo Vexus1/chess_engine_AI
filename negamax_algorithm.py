@@ -4,7 +4,7 @@ import chess
 from chess import Piece, Board, Move
 from icecream import ic
 
-from ai_timer import time_it
+from ai_timer import time_it, sum_time
 
 class ChessAi:
     def __init__(self, board: Board):
@@ -91,7 +91,7 @@ class ChessAi:
         Returns:
             int: The depth of the decision tree used by the Min-Max algorithm.
         """
-        return 6  # Example fixed depth; in practice, this could be set dynamically
+        return 5  # Example fixed depth; in practice, this could be set dynamically
     
     @property
     def player(self) -> str:
@@ -119,8 +119,8 @@ class ChessAi:
         print(self.board)
         print()
         if self.board.turn == chess.WHITE:
-            move = self.player
-            # move = self.random_agent
+            # move = self.player
+            move = self.random_agent
             move = chess.Move.from_uci(str(move))
             self.board.push(move)
         else:
