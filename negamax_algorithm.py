@@ -10,14 +10,17 @@ class ChessAi:
     def __init__(self, board: Board):
         self.board = board
         self.null_move_reduction = 2 
+        # static value according to (https://www.chessprogramming.org/Delta_Pruning)
+        self.delta_margin = 975
+        self.max_quiescence_depth = 0 # currently unstable => 0
 
     def pieces_value(self, piece: Piece) -> int:
-        values_map = {chess.PAWN: 1,
-                      chess.KNIGHT: 3,
-                      chess.BISHOP: 3,
-                      chess.ROOK: 5,
-                      chess.QUEEN: 9,
-                      chess.KING: 0}
+        values_map = {chess.PAWN: 100,
+                      chess.KNIGHT: 320,
+                      chess.BISHOP: 330,
+                      chess.ROOK: 500,
+                      chess.QUEEN: 900,
+                      chess.KING: 20000}
         return values_map[piece.piece_type]
       
     @property
@@ -35,7 +38,7 @@ class ChessAi:
         '''This algorithm relies on the fact that: min(a,b) = -max(-b,-a)
            to simplify the implementation of the minimax algorithm'''
         if depth == 0 or self.board.is_game_over():
-            return color * self.evaluate_board
+            return self.quiescence_search(alpha, beta, color, 0)
         self.null_move_heuristic(depth, alpha, beta, color)
         max_eval = float('-inf')
         for move in self.board.legal_moves:
@@ -48,6 +51,43 @@ class ChessAi:
                 break
         return max_eval
     
+    def quiescence_search(self, alpha: int, beta: int,
+                          color: int, depth: int) -> int:
+        '''Performs Quiescence Search with delta margin
+           to avoid the horizon effect'''
+        stand_pat = color * self.evaluate_board
+        if depth >= self.max_quiescence_depth:
+            return stand_pat
+        if stand_pat >= beta:
+            return beta
+        if stand_pat + self.delta_margin < alpha:
+            return alpha
+        if alpha < stand_pat:
+            alpha = stand_pat
+        ordered_captures = self.order_captures()
+        for move in ordered_captures:
+            self.board.push(move)
+            score = -self.quiescence_search(-beta, -alpha, -color, depth + 1)
+            self.board.pop()
+            if score >= beta:
+                return beta
+            if score > alpha:
+                alpha = score
+        return alpha
+    
+    def order_captures(self) -> list[Move]:
+        '''Order captures based on MVV/LVA'''
+        captures = []
+        for move in self.board.legal_moves:
+            if self.board.is_capture(move):
+                victim = self.board.piece_at(move.to_square)
+                attacker = self.board.piece_at(move.from_square)
+                if victim and attacker:
+                    score = self.pieces_value(victim) - self.pieces_value(attacker)
+                    captures.append((score, move))
+        captures.sort(reverse=True, key=lambda x: x[0])
+        return [move for _, move in captures]
+
     def null_move_heuristic(self, depth: int, alpha: int,
                           beta: int, color: int) -> int:
         '''Implements null move heuristic to enhance the alpha-beta pruning
@@ -70,8 +110,8 @@ class ChessAi:
     def decision_function(self, depth: int) -> Move:
         best_move = None
         best_value = float('-inf')
-        alpha = float('-inf')
-        beta = float('inf')
+        alpha = -100000
+        beta = 100000
         for move in self.board.legal_moves:
             self.board.push(move)
             board_value = -self.negamax(depth - 1, -beta, -alpha, -1)
@@ -90,7 +130,7 @@ class ChessAi:
     @property
     def decision_tree_depth(self) -> int:
         '''Determines the depth of the decision tree for the Min-Max algorithm.'''
-        return 6
+        return 4
     
     @property
     def player(self) -> str:
@@ -118,8 +158,8 @@ class ChessAi:
         print(self.board)
         print()
         if self.board.turn == chess.WHITE:
-            move = self.player
-            # move = self.random_agent
+            # move = self.player
+            move = self.random_agent
             move = chess.Move.from_uci(str(move))
             self.board.push(move)
         else:
