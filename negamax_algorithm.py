@@ -1,4 +1,5 @@
 from random import choice
+from typing import Any
 
 import chess
 from chess import Piece, Board, Move
@@ -13,6 +14,8 @@ class ChessAi:
         # static value according to (https://www.chessprogramming.org/Delta_Pruning)
         self.delta_margin = 975
         self.max_quiescence_depth = 0 # currently unstable => 0
+        self.history_table = {}
+        self.killer_moves = [[None, None] for _ in range(100)] # max depth 100
 
     def pieces_value(self, piece: Piece) -> int:
         values_map = {chess.PAWN: 100,
@@ -41,13 +44,16 @@ class ChessAi:
             return self.quiescence_search(alpha, beta, color, 0)
         self.null_move_heuristic(depth, alpha, beta, color)
         max_eval = float('-inf')
-        for move in self.board.legal_moves:
+        ordered_moves = self.sort_moves(depth)
+        for move in ordered_moves:
             self.board.push(move)
             eval = -self.negamax(depth - 1, -beta, -alpha, -color)
             self.board.pop()
             max_eval = max(max_eval, eval)
             alpha = max(alpha, eval)
             if alpha >= beta:
+                self.update_killer_moves(move, depth)
+                self.update_history_table(move, depth)
                 break
         return max_eval
     
@@ -83,10 +89,45 @@ class ChessAi:
                 victim = self.board.piece_at(move.to_square)
                 attacker = self.board.piece_at(move.from_square)
                 if victim and attacker:
-                    score = self.pieces_value(victim) - self.pieces_value(attacker)
-                    captures.append((score, move))
+                    mvv_lva_score = self.pieces_value(victim) - self.pieces_value(attacker)
+                    history_score = self.history_table.get((self.board.turn, move), 0)
+                    total_score = mvv_lva_score + history_score
+                    captures.append((total_score, move))
         captures.sort(reverse=True, key=lambda x: x[0])
         return [move for _, move in captures]
+    
+    def sort_moves(self, depth: int) -> list[Move]:
+        captures = []
+        non_captures = []
+        for move in self.board.legal_moves:
+            if self.board.is_capture(move):
+                victim = self.board.piece_at(move.to_square)
+                attacker = self.board.piece_at(move.from_square)
+                if victim and attacker:
+                    score = self.pieces_value(victim) - self.pieces_value(attacker)
+                    captures.append((score, move))
+            else:
+                if move == self.killer_moves[depth][0]:
+                    score = 1000
+                elif move == self.killer_moves[depth][1]:
+                    score = 900
+                else:
+                    score = self.history_table.get((self.board.turn, move), 0)
+                non_captures.append((score, move))
+        captures.sort(reverse=True, key=lambda x: x[0])
+        non_captures.sort(reverse=True, key=lambda x: x[0])
+        ordered_moves = [move for _, move in captures + non_captures]
+        return ordered_moves
+    
+    def update_history_table(self, move: Move, depth: int) -> None:
+        if (self.board.turn, move) not in self.history_table:
+            self.history_table[(self.board.turn, move)] = 0
+        self.history_table[(self.board.turn, move)] += depth ** 2
+
+    def update_killer_moves(self, move: Move, depth: int) -> None:
+        if move != self.killer_moves[depth][0]:
+            self.killer_moves[depth][1] = self.killer_moves[depth][0]
+            self.killer_moves[depth][0] = move
 
     def null_move_heuristic(self, depth: int, alpha: int,
                           beta: int, color: int) -> int:
@@ -112,7 +153,8 @@ class ChessAi:
         best_value = float('-inf')
         alpha = -100000
         beta = 100000
-        for move in self.board.legal_moves:
+        ordered_moves = self.sort_moves(depth)
+        for move in ordered_moves:
             self.board.push(move)
             board_value = -self.negamax(depth - 1, -beta, -alpha, -1)
             self.board.pop()
@@ -130,7 +172,7 @@ class ChessAi:
     @property
     def decision_tree_depth(self) -> int:
         '''Determines the depth of the decision tree for the Min-Max algorithm.'''
-        return 4
+        return 6
     
     @property
     def player(self) -> str:
